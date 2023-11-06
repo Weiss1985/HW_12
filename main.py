@@ -86,7 +86,7 @@ class Record:
 
 class AddressBook(UserDict):
     
-    FILENAME = "address_book.pickle"
+    FILENAME = "address_book.pi"
 
     def __init__(self):
         super().__init__()
