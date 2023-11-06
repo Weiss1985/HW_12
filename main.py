@@ -1,5 +1,4 @@
 import pickle
-from collections import UserDict
 from datetime import datetime
 
 class Field:
@@ -30,7 +29,7 @@ class Phone(Field):
 
 class Birthday(Field):
     def is_valid(self, value):
-        super().__init__(value)
+        super().__init(value)
         try:
             datetime.strptime(value, '%d-%m-%Y')
         except ValueError:
@@ -84,17 +83,33 @@ class Record:
         days_left = (next_birthday - today).days
         return days_left
 
-class AddressBook(UserDict):
-    
+class AddressBook:
     FILENAME = "address_book.pi"
 
     def __init__(self):
-        super().__init__()
         self.load_from_file()
 
     def add_record(self, record):
-        self.data[record.name.value] = record
-        self.save_to_file()
+        if record.name.value in self.data:
+            choice = input("Контакт з таким ім'ям вже існує. Бажаєте оновити існуючий запис? (так/ні): ")
+            if choice.lower() == "так":
+                self.edit_record(record.name.value, record.phones[0].value)
+                print(f"Контакт оновлено: {record.name.value} - {record.phones[0].value}")
+            elif choice.lower() == "ні":
+                print("Дія відмінена. Немає змін у контактах.")
+            else:
+                print("Невірна відповідь. Дія відмінена.")
+        else:
+            self.data[record.name.value] = record
+            self.save_to_file()
+
+    def edit_record(self, name, new_phone):
+        if name in self.data:
+            record = self.data[name]
+            record.edit_phone(record.phones[0].value, new_phone)
+            self.save_to_file()
+        else:
+            print("Контакт не знайдений.")
 
     def find(self, name):
         if name in self.data:
@@ -103,6 +118,7 @@ class AddressBook(UserDict):
     def delete(self, name):
         if name in self.data:
             del self.data[name]
+            self.save_to_file()
 
     def save_to_file(self):
         with open(self.FILENAME, 'wb') as file:
@@ -157,6 +173,14 @@ def main():
         else:
             return "Будь ласка, введіть ім'я та номер телефону."
 
+    def handle_edit(args):
+        if args:
+            name, phone = args.split(' ', 1)
+            address_book.edit_record(name, phone)
+            return f"Контакт оновлено: {name} - {phone}"
+        else:
+            return "Будь ласка, введіть ім'я та новий номер телефону."
+
     def handle_show_all():
         result = "Контакти:\n"
         for record in address_book.data.values():
@@ -182,10 +206,15 @@ def main():
         
         if command_type in ["додати", "add"]:
             print(handle_add(args))
+        elif command_type in ["редагувати", "edit"]:
+            print(handle_edit(args))
         elif command_type in ["показати", "show"]:
             print(handle_show_all())
         elif command_type in [ "пошук", "search"]:
             print(handle_find(args))
+        elif command_type in ["видалити", "delete"]:
+            address_book.delete(args)
+            print(f"Контакт {args} видалено.")
         elif command_type in ["вихід", "завершити", "quit", "exit"]:
             break
         else:
